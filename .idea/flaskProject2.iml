@@ -19,6 +19,8 @@
         <option value="$MODULE_DIR$/venv/lib/python3.9/site-packages/flask_bootstrap/static" />
         <option value="$MODULE_DIR$/app/templates" />
         <option value="$MODULE_DIR$/app/static" />
+        <option value="$MODULE_DIR$/app/templates/auth" />
+        <option value="$MODULE_DIR$/app/templates/mail" />
       </list>
     </option>
   </component>
