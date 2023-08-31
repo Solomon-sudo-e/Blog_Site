@@ -21,6 +21,8 @@
         <option value="$MODULE_DIR$/app/static" />
         <option value="$MODULE_DIR$/app/templates/auth" />
         <option value="$MODULE_DIR$/app/templates/mail" />
+        <option value="$MODULE_DIR$/app/auth/email" />
+        <option value="$MODULE_DIR$/app/templates/auth/email" />
       </list>
     </option>
   </component>
