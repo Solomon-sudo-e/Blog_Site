@@ -9,17 +9,39 @@ from markdown import markdown
 import bleach
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-
 class Permission:
     FOLLOW = 1
     COMMENT = 2
     WRITE = 4
     MODERATE = 8
     ADMIN = 16
+
+    def check_follow(self):
+        if (self == Permission.FOLLOW or self == Permission.COMMENT
+                or self == Permission.WRITE or self == Permission.MODERATE or self == Permission.ADMIN):
+            return 1
+        return 0
+
+    def check_comment(self):
+        if (self == Permission.COMMENT or self == Permission.WRITE
+                or self == Permission.MODERATE or self == Permission.ADMIN):
+            return 1
+        return 0
+
+    def check_write(self):
+        if self == Permission.WRITE or self == Permission.MODERATE or self == Permission.ADMIN:
+            return 1
+        return 0
+
+    def check_moderate(self):
+        if self == Permission.MODERATE or self == Permission.ADMIN:
+            return 1
+        return 0
+
+    def check_admin(self):
+        if self == Permission.ADMIN:
+            return 1
+        return 0
 
 
 class Role(db.Model):
@@ -75,6 +97,15 @@ class Role(db.Model):
         return '<Role %r>' % self.name
 
 
+class Follow(db.Model):
+    __tablename__: 'follows'
+    follower_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
+    followed_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                            primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -90,6 +121,16 @@ class User(UserMixin, db.Model):
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     avatar_hash = db.Column(db.String(32))
     posts = db.Relationship('Post', backref='author', lazy='dynamic')
+    followed = db.Relationship('Follow',
+                               foreign_keys=[Follow.follower_id],
+                               backref=db.backref('follower', lazy='joined'),
+                               lazy='dynamic',
+                               cascade='all, delete-orphan')
+    followers = db.Relationship('Follow',
+                                foreign_keys=[Follow.followed_id],
+                                backref=db.backref('followed', lazy='joined'),
+                                lazy='dynamic',
+                                cascade='all, delete-orphan')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -191,6 +232,28 @@ class User(UserMixin, db.Model):
         hash = self.avatar_hash or self.gravatar_hash()
         return '{url}/{hash}?s={size}&d={default}&r={rating}'.format(
             url=url, hash=hash, size=size, default=default, rating=rating)
+
+    def follow(self, user):
+        if not self.is_following(user):
+            f = Follow(follower=self, followed=user)
+            db.session.add(f)
+
+    def unfollow(self, user):
+        f = self.followed.filter_by(followed_id=user.id).first()
+        if f:
+            db.session.delete(f)
+
+    def is_following(self, user):
+        if user.id is None:
+            return False
+        return self.followed.filter_by(
+            followed_id=user.id).first() is not None
+
+    def is_followed_by(self, user):
+        if user.id is None:
+            return False
+        return self.followers.filter_by(
+            follower_id=user.id).first() is not None
 
     def __repr__(self):
         return '<User %r>' % self.username

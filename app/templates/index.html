@@ -15,7 +15,7 @@
     </h1>
 </div>
 <div>
-    {% if current_user.can(Permission.WRITE) %}
+    {% if Permission.check_write(current_user) %}
     {{ wtf.quick_form(form) }}
     {% endif %}
     <br><br>
