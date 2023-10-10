@@ -1,5 +1,5 @@
 from functools import wraps
-from errors import forbidden
+from .errors import forbidden
 from flask import g
 
 
